@@ -1,0 +1,176 @@
+[gd_scene load_steps=6 format=3 uid="uid://b0t4q7a1w8x2p"]
+
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
+[ext_resource type="PackedScene" uid="uid://dm5x8y2p3q1rk" path="res://scenes/ui/upgrade_shop.tscn" id="2_shop"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top"]
+bg_color = Color(0.08, 0.09, 0.12, 0.9)
+border_width_bottom = 2
+border_color = Color(0.2, 0.25, 0.35, 0.8)
+
+[sub_resource type="LabelSettings" id="LabelSettings_coins"]
+font_size = 20
+font_color = Color(1, 0.85, 0.2, 1)
+outline_size = 3
+outline_color = Color(0.1, 0.1, 0.1, 0.9)
+
+[sub_resource type="LabelSettings" id="LabelSettings_souls"]
+font_size = 20
+font_color = Color(0.75, 0.45, 1, 1)
+outline_size = 3
+outline_color = Color(0.1, 0.1, 0.1, 0.9)
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="RootUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBar" type="PanelContainer" parent="RootUI"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 60.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_top")
+
+[node name="Margin" type="MarginContainer" parent="RootUI/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 8
+
+[node name="HBox" type="HBoxContainer" parent="RootUI/TopBar/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Currencies" type="HBoxContainer" parent="RootUI/TopBar/Margin/HBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="CoinsBox" type="HBoxContainer" parent="RootUI/TopBar/Margin/HBox/Currencies"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Icon" type="Label" parent="RootUI/TopBar/Margin/HBox/Currencies/CoinsBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 14
+text = "ЗОЛОТО:"
+
+[node name="CoinsLabel" type="Label" parent="RootUI/TopBar/Margin/HBox/Currencies/CoinsBox"]
+layout_mode = 2
+text = "0"
+label_settings = SubResource("LabelSettings_coins")
+
+[node name="SoulsBox" type="HBoxContainer" parent="RootUI/TopBar/Margin/HBox/Currencies"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Icon" type="Label" parent="RootUI/TopBar/Margin/HBox/Currencies/SoulsBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.5, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "ДУШИ:"
+
+[node name="SoulsLabel" type="Label" parent="RootUI/TopBar/Margin/HBox/Currencies/SoulsBox"]
+layout_mode = 2
+text = "0"
+label_settings = SubResource("LabelSettings_souls")
+
+[node name="DistanceBox" type="VBoxContainer" parent="RootUI/TopBar/Margin/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="DistanceLabel" type="Label" parent="RootUI/TopBar/Margin/HBox/DistanceBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "0 м"
+horizontal_alignment = 1
+
+[node name="DimensionLabel" type="Label" parent="RootUI/TopBar/Margin/HBox/DistanceBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 0.8)
+theme_override_font_sizes/font_size = 12
+text = "Локация: Пригород"
+horizontal_alignment = 1
+
+[node name="PortalButton" type="Button" parent="RootUI/TopBar/Margin/HBox"]
+custom_minimum_size = Vector2(130, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "ПОРТАЛ"
+
+[node name="ShopButton" type="Button" parent="RootUI/TopBar/Margin/HBox"]
+custom_minimum_size = Vector2(130, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "МАГАЗИН"
+
+[node name="BottomControls" type="MarginContainer" parent="RootUI"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -100.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 25
+
+[node name="HBox" type="HBoxContainer" parent="RootUI/BottomControls"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="JumpButton" type="Button" parent="RootUI/BottomControls/HBox"]
+custom_minimum_size = Vector2(160, 65)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "ПРЫЖОК (Space)"
+
+[node name="Spacer" type="Control" parent="RootUI/BottomControls/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="BoostButton" type="Button" parent="RootUI/BottomControls/HBox"]
+custom_minimum_size = Vector2(160, 65)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RootUI/BottomControls/HBox/BoostButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 15
+text = "НИТРО (Shift)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="UpgradeShop" parent="RootUI" instance=ExtResource("2_shop")]
+visible = false
+layout_mode = 1
+
+[node name="WarpFlash" type="ColorRect" parent="RootUI"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

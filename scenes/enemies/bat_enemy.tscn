@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://dm4k8p1x7v2pq"]
+
+[ext_resource type="Script" path="res://scripts/enemies/bat_enemy.gd" id="1_bat"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hurtbox"]
+radius = 24.0
+
+[node name="BatEnemy" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_bat")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="Hurtbox" type="Area2D" parent="." groups=["enemy_hitbox"]]
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_hurtbox")

@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3 uid="uid://df7w81kxqm2pq"]
+
+[ext_resource type="Script" path="res://scripts/world/parallax_layer_art.gd" id="1_art"]
+
+[node name="ParallaxBackground" type="ParallaxBackground"]
+
+[node name="SkyLayer" type="ParallaxLayer" parent="."]
+motion_scale = Vector2(0.02, 0)
+motion_mirroring = Vector2(1280, 0)
+
+[node name="SkyArt" type="Node2D" parent="SkyLayer"]
+script = ExtResource("1_art")
+layer_type = "sky"
+
+[node name="MountainLayer" type="ParallaxLayer" parent="."]
+motion_scale = Vector2(0.15, 0)
+motion_mirroring = Vector2(1280, 0)
+
+[node name="MountainArt" type="Node2D" parent="MountainLayer"]
+script = ExtResource("1_art")
+layer_type = "mountains"
+
+[node name="HillsLayer" type="ParallaxLayer" parent="."]
+motion_scale = Vector2(0.4, 0)
+motion_mirroring = Vector2(1280, 0)
+
+[node name="HillsArt" type="Node2D" parent="HillsLayer"]
+script = ExtResource("1_art")
+layer_type = "hills"

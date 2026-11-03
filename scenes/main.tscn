@@ -1,0 +1,24 @@
+[gd_scene load_steps=7 format=3 uid="uid://c8m2v9a4l3q8x"]
+
+[ext_resource type="Script" path="res://scripts/core/main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://df7w81kxqm2pq" path="res://scenes/world/parallax_bg.tscn" id="2_bg"]
+[ext_resource type="Script" path="res://scripts/world/world_generator.gd" id="3_world"]
+[ext_resource type="PackedScene" uid="uid://b2k8v2h8p7gpx" path="res://scenes/player/player_bike.tscn" id="4_player"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_spawner.gd" id="5_spawner"]
+[ext_resource type="PackedScene" uid="uid://b0t4q7a1w8x2p" path="res://scenes/ui/hud.tscn" id="6_hud"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="ParallaxBackground" parent="." instance=ExtResource("2_bg")]
+
+[node name="WorldGenerator" type="Node2D" parent="."]
+script = ExtResource("3_world")
+
+[node name="PlayerBike" parent="." instance=ExtResource("4_player")]
+position = Vector2(100, -25)
+
+[node name="EnemySpawner" type="Node2D" parent="."]
+script = ExtResource("5_spawner")
+
+[node name="HUD" parent="." instance=ExtResource("6_hud")]

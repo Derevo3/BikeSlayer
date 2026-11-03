@@ -1,0 +1,102 @@
+[gd_scene load_steps=8 format=3 uid="uid://b2k8v2h8p7gpx"]
+
+[ext_resource type="Script" path="res://scripts/player/player_bike.gd" id="1_bike"]
+[ext_resource type="Script" path="res://scripts/player/bike_frame.gd" id="2_frame"]
+[ext_resource type="Script" path="res://scripts/player/bike_wheel.gd" id="3_wheel"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(68, 44)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ram"]
+size = Vector2(76, 54)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_magnet"]
+radius = 60.0
+
+[sub_resource type="Curve" id="Curve_particles"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[node name="PlayerBike" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_bike")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -18)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Visuals" type="Node2D" parent="."]
+position = Vector2(0, -18)
+
+[node name="Frame" type="Node2D" parent="Visuals"]
+script = ExtResource("2_frame")
+
+[node name="BackWheel" type="Node2D" parent="Visuals"]
+position = Vector2(-28, 0)
+script = ExtResource("3_wheel")
+
+[node name="FrontWheel" type="Node2D" parent="Visuals"]
+position = Vector2(28, 0)
+script = ExtResource("3_wheel")
+is_front_weapon_wheel = true
+
+[node name="Pedals" type="Node2D" parent="Visuals"]
+position = Vector2(-4, 0)
+
+[node name="RamPoint" type="Marker2D" parent="Visuals"]
+position = Vector2(44, 0)
+
+[node name="AttackArea" type="Area2D" parent="."]
+position = Vector2(0, -18)
+collision_layer = 0
+collision_mask = 4
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackArea"]
+position = Vector2(46, 0)
+shape = SubResource("RectangleShape2D_ram")
+
+[node name="CoinCollector" type="Area2D" parent="."]
+position = Vector2(0, -18)
+collision_layer = 0
+collision_mask = 8
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CoinCollector"]
+shape = SubResource("CircleShape2D_magnet")
+
+[node name="DustParticles" type="CPUParticles2D" parent="."]
+position = Vector2(-28, 0)
+emitting = false
+amount = 12
+lifetime = 0.25
+gravity = Vector2(-150, -40)
+initial_velocity_min = 20.0
+initial_velocity_max = 60.0
+scale_amount_min = 2.0
+scale_amount_max = 4.5
+scale_amount_curve = SubResource("Curve_particles")
+color = Color(0.65, 0.6, 0.55, 0.7)
+
+[node name="BoostParticles" type="CPUParticles2D" parent="."]
+position = Vector2(-32, -18)
+emitting = false
+amount = 30
+lifetime = 0.3
+gravity = Vector2(-200, 0)
+initial_velocity_min = 80.0
+initial_velocity_max = 140.0
+scale_amount_min = 3.0
+scale_amount_max = 7.0
+scale_amount_curve = SubResource("Curve_particles")
+color = Color(0.2, 0.7, 1, 0.8)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(180, -60)
+zoom = Vector2(1.15, 1.15)
+process_callback = 0
+position_smoothing_enabled = true
+position_smoothing_speed = 6.0
+drag_horizontal_enabled = true
+drag_vertical_enabled = true
