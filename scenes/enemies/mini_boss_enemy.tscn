@@ -1,0 +1,74 @@
+[gd_scene load_steps=6 format=3 uid="uid://d1g0l1a7hb055"]
+
+[ext_resource type="Script" path="res://scripts/enemies/mini_boss_enemy.gd" id="1_boss"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(56, 70)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hurtbox"]
+size = Vector2(74, 80)
+
+[sub_resource type="LabelSettings" id="LabelSettings_boss"]
+font_size = 12
+font_color = Color(1, 0.85, 0.2, 1)
+outline_size = 3
+outline_color = Color(0.1, 0.1, 0.1, 0.95)
+
+[sub_resource type="LabelSettings" id="LabelSettings_hp"]
+font_size = 10
+font_color = Color(1, 1, 1, 0.9)
+outline_size = 2
+outline_color = Color(0.1, 0.1, 0.1, 0.95)
+
+[node name="MiniBossEnemy" type="CharacterBody2D" groups=["boss"]]
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("1_boss")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -35)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Visuals" type="Node2D" parent="."]
+position = Vector2(0, 0)
+
+[node name="Hurtbox" type="Area2D" parent="." groups=["enemy_hitbox"]]
+position = Vector2(0, -35)
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("RectangleShape2D_hurtbox")
+
+[node name="HealthBarUI" type="Node2D" parent="."]
+position = Vector2(0, -88)
+
+[node name="NameLabel" type="Label" parent="HealthBarUI"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -70.0
+offset_top = -20.0
+offset_right = 70.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "БОСС: ГОЛИАФ"
+label_settings = SubResource("LabelSettings_boss")
+horizontal_alignment = 1
+
+[node name="HPLabel" type="Label" parent="HealthBarUI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -50.0
+offset_top = 11.0
+offset_right = 50.0
+offset_bottom = 26.0
+grow_horizontal = 2
+text = "140 / 140"
+label_settings = SubResource("LabelSettings_hp")
+horizontal_alignment = 1

@@ -26,6 +26,9 @@ var boost_duration: float = 4.0
 var boost_cooldown: float = 12.0
 var boost_cooldown_remaining: float = 0.0
 
+# Буфер пассивного дохода монет
+var passive_coins_buffer: float = 0.0
+
 # Текущий биом/измерение
 var current_dimension: String = "suburb"
 const AVAILABLE_DIMENSIONS: Array[String] = ["suburb", "wasteland", "cyber"]
@@ -55,13 +58,31 @@ func get_dimension_reward_mult() -> float:
 		"cyber": return 5.0
 		_: return 1.0
 
+func get_passive_income_rate() -> float:
+	var base_rate = UpgradeManager.get_value("bike_upgrade", 0.0)
+	return base_rate * get_dimension_reward_mult()
+
 func _ready() -> void:
 	EventBus.coin_collected.connect(_on_coin_collected)
 	EventBus.enemy_killed.connect(_on_enemy_killed)
+	UpgradeManager.upgrades_updated.connect(_on_upgrades_updated)
+
+func _on_upgrades_updated() -> void:
+	stats_changed.emit()
 
 func _process(delta: float) -> void:
 	if boost_cooldown_remaining > 0.0:
 		boost_cooldown_remaining = max(0.0, boost_cooldown_remaining - delta)
+	_process_passive_income(delta)
+
+func _process_passive_income(delta: float) -> void:
+	var rate = get_passive_income_rate()
+	if rate > 0.0:
+		passive_coins_buffer += rate * delta
+		if passive_coins_buffer >= 1.0:
+			var coins_to_add: int = int(passive_coins_buffer)
+			passive_coins_buffer -= coins_to_add
+			coins += coins_to_add
 
 func _on_coin_collected(amount: int) -> void:
 	var multiplier: float = UpgradeManager.get_value("coin_greed", 1.0)

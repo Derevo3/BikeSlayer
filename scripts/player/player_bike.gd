@@ -7,6 +7,7 @@ class_name PlayerBike
 @export var base_gravity: float = 1200.0
 @export var jump_force: float = -520.0
 @export var boost_speed_mult: float = 1.7
+@export var ram_damage: float = 20.0
 
 @onready var attack_area: Area2D = $AttackArea
 @onready var coin_collector: Area2D = $CoinCollector
@@ -24,6 +25,7 @@ var attack_timer: float = 0.0
 var is_ramming: bool = false
 var ram_anim_time: float = 0.0
 var original_visual_pos: Vector2 = Vector2.ZERO
+var current_boss_target: Node = null
 
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
@@ -93,30 +95,67 @@ func _physics_process(delta: float) -> void:
 		jump_buffer_timer = max(0.0, jump_buffer_timer - delta)
 		_check_jump()
 	
-	# 2. Горизонтальное движение (автоматическое)
+	# Проверка статуса противостояния с боссом
+	var is_fighting_boss: bool = false
+	if is_instance_valid(current_boss_target):
+		if current_boss_target.is_dead:
+			current_boss_target = null
+		else:
+			is_fighting_boss = true
+	
+	# Если цель еще не зафиксирована, проверяем наличие живого босса в зоне атаки
+	if not is_fighting_boss and attack_area:
+		for area in attack_area.get_overlapping_areas():
+			if area.is_in_group("enemy_hitbox"):
+				var enemy = area.get_parent()
+				if enemy and enemy.is_in_group("boss") and not enemy.is_dead:
+					current_boss_target = enemy
+					is_fighting_boss = true
+					if enemy.has_method("set_engaged"):
+						enemy.set_engaged(true)
+					break
+	
+	# 2. Горизонтальное движение (автоматическое или удержание перед боссом)
 	var target_speed = current_speed
 	if GameManager.is_boosting:
 		target_speed *= boost_speed_mult
 	
-	velocity.x = target_speed
+	if is_fighting_boss:
+		var stop_dist: float = 78.0
+		var desired_x: float = current_boss_target.global_position.x - stop_dist
+		if global_position.x < desired_x:
+			velocity.x = min(target_speed, (desired_x - global_position.x) / max(delta, 0.001))
+		else:
+			velocity.x = 0.0
+			global_position.x = desired_x
+	else:
+		velocity.x = target_speed
 	
-	# Обновляем пройденную дистанцию
-	GameManager.distance_traveled += (velocity.x * delta) / 100.0 # метры
+	# Обновляем пройденную дистанцию только при поступательном движении вперед
+	if velocity.x > 0.0:
+		GameManager.distance_traveled += (velocity.x * delta) / 100.0 # метры
 	
 	move_and_slide()
 	
 	# 3. Анимация колес и педалей
 	var wheel_rotation_speed = (velocity.x / 24.0) * delta
-	if front_wheel:
-		front_wheel.rotation += wheel_rotation_speed
-	if back_wheel:
-		back_wheel.rotation += wheel_rotation_speed
-	if pedals:
-		pedals.rotation += wheel_rotation_speed * 0.75
+	if is_fighting_boss:
+		# При остановке перед боссом заднее колесо пробуксовывает
+		if back_wheel:
+			back_wheel.rotation += (target_speed / 28.0) * delta
+		if pedals:
+			pedals.rotation += (target_speed / 36.0) * delta
+	else:
+		if front_wheel:
+			front_wheel.rotation += wheel_rotation_speed
+		if back_wheel:
+			back_wheel.rotation += wheel_rotation_speed
+		if pedals:
+			pedals.rotation += wheel_rotation_speed * 0.75
 	
-	# Частицы пыли при контакте с землей
+	# Частицы пыли при контакте с землей (включая пробуксовку перед боссом)
 	if dust_particles:
-		dust_particles.emitting = is_on_floor() and velocity.x > 50.0
+		dust_particles.emitting = is_on_floor() and (velocity.x > 50.0 or is_fighting_boss)
 
 	# 4. Логика авто-атаки велосипедом
 	_process_auto_attack(delta)
@@ -138,6 +177,19 @@ func _process_auto_attack(delta: float) -> void:
 	var cooldown = 1.0 / max(0.2, attack_rate)
 	
 	attack_timer += delta
+	
+	# Если заблокированы перед боссом — непрерывно тараним его по откату
+	if is_instance_valid(current_boss_target):
+		if current_boss_target.is_dead:
+			current_boss_target = null
+		else:
+			if attack_timer >= cooldown:
+				_perform_bike_ram(current_boss_target)
+				attack_timer = 0.0
+				if current_boss_target.is_dead:
+					current_boss_target = null
+			return
+	
 	if attack_timer >= cooldown:
 		var targets = attack_area.get_overlapping_areas()
 		for area in targets:
@@ -146,17 +198,29 @@ func _process_auto_attack(delta: float) -> void:
 				if enemy and enemy.has_method("take_damage") and not enemy.is_dead:
 					_perform_bike_ram(enemy)
 					attack_timer = 0.0
+					
+					# Если это босс и он пережил удар — останавливаемся перед ним!
+					if enemy.is_in_group("boss") and not enemy.is_dead:
+						current_boss_target = enemy
+						if enemy.has_method("set_engaged"):
+							enemy.set_engaged(true)
 					break
 
 func _perform_bike_ram(enemy: Node) -> void:
 	is_ramming = true
 	ram_anim_time = 0.0
 	
-	var base_dmg = UpgradeManager.get_value("ram_damage", 10.0)
-	var total_dmg = base_dmg * (2.0 if GameManager.is_boosting else 1.0)
+	var total_dmg = ram_damage * (2.0 if GameManager.is_boosting else 1.0)
 	
 	var hit_pos = ram_impact_spawner.global_position if ram_impact_spawner else global_position + Vector2(40, 0)
 	enemy.take_damage(total_dmg, hit_pos)
+	
+	# Сплеш-урон по остальным мелким врагам в зоне контакта
+	for area in attack_area.get_overlapping_areas():
+		if area.is_in_group("enemy_hitbox"):
+			var other = area.get_parent()
+			if other and other != enemy and other.has_method("take_damage") and not other.is_dead:
+				other.take_damage(total_dmg, hit_pos)
 	
 	EventBus.player_attacked.emit(hit_pos)
 	_spawn_ram_impact_fx(hit_pos)

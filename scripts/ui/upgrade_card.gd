@@ -24,7 +24,10 @@ func update_view() -> void:
 	title_label.text = up.name
 	level_label.text = "Ур. " + str(up.level) if up.max_level < 0 else "Ур. %d/%d" % [up.level, up.max_level]
 	desc_label.text = up.description
-	value_label.text = "Текущий бонус: +%.1f" % (up.level * up.value_step)
+	if upgrade_id == "bike_upgrade":
+		value_label.text = "Пассивный доход: +%.1f/с" % (up.level * up.value_step)
+	else:
+		value_label.text = "Текущий бонус: +%.1f" % (up.level * up.value_step)
 	
 	var cost = up.get_cost()
 	if cost < 0:

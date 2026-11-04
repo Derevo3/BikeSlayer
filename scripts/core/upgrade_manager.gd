@@ -42,10 +42,10 @@ func _ready() -> void:
 
 func _init_upgrades() -> void:
 	_register(Upgrade.new(
-		"ram_damage",
-		"Удар рамой и колесом",
-		"Увеличивает урон от тарана велосипедом",
-		10, 1.25, 10.0, 5.0, "coins"
+		"bike_upgrade",
+		"Прокачка велосипеда",
+		"Приносит пассивный доход золота в секунду",
+		10, 1.25, 0.0, 1.0, "coins"
 	))
 	
 	_register(Upgrade.new(

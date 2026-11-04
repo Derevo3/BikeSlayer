@@ -26,6 +26,7 @@ func _ready() -> void:
 	if bus:
 		bus.distance_updated.connect(_update_distance_display)
 		bus.dimension_changed.connect(_on_dimension_changed)
+		bus.boss_spawned.connect(_on_boss_spawned)
 	
 	shop_button.pressed.connect(_on_shop_pressed)
 	portal_button.pressed.connect(_on_portal_pressed)
@@ -42,7 +43,11 @@ func _process(_delta: float) -> void:
 func _update_stats_display() -> void:
 	var gm = get_node_or_null("/root/GameManager")
 	if gm and coins_label and souls_label:
-		coins_label.text = _format_number(gm.coins)
+		var passive_rate: float = gm.get_passive_income_rate()
+		if passive_rate > 0.0:
+			coins_label.text = "%s (+%.1f/с)" % [_format_number(gm.coins), passive_rate]
+		else:
+			coins_label.text = _format_number(gm.coins)
 		souls_label.text = _format_number(gm.souls)
 
 func _update_distance_display(meters: float) -> void:
@@ -56,6 +61,7 @@ func _on_dimension_changed(_dim_id: String) -> void:
 	var gm = get_node_or_null("/root/GameManager")
 	if gm:
 		_update_distance_display(gm.distance_traveled)
+		_update_stats_display()
 
 func _get_dimension_title(dim_id: String) -> String:
 	match dim_id:
@@ -118,3 +124,33 @@ func _format_number(num: int) -> String:
 	elif num >= 1_000:
 		return "%.1f K" % (float(num) / 1_000.0)
 	return str(num)
+
+func _on_boss_spawned(boss_name: String) -> void:
+	_show_boss_alert(boss_name)
+
+func _show_boss_alert(boss_name: String) -> void:
+	var alert = Label.new()
+	alert.text = "⚠️ ВНИМАНИЕ: МИНИ-БОСС %s! ⚠️" % boss_name.to_upper()
+	alert.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	alert.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	alert.add_theme_font_size_override("font_size", 22)
+	alert.add_theme_color_override("font_color", Color(1.0, 0.28, 0.2))
+	alert.add_theme_color_override("font_outline_color", Color(0.1, 0.1, 0.1, 0.95))
+	alert.add_theme_constant_override("outline_size", 4)
+	
+	alert.anchors_preset = Control.PRESET_CENTER_TOP
+	alert.position = Vector2(0, 75)
+	alert.size = Vector2(1280, 40)
+	$RootUI.add_child(alert)
+	
+	alert.modulate.a = 0.0
+	alert.scale = Vector2(0.85, 0.85)
+	alert.pivot_offset = Vector2(640, 20)
+	
+	var tw = create_tween()
+	tw.tween_property(alert, "modulate:a", 1.0, 0.22)
+	tw.parallel().tween_property(alert, "scale", Vector2(1.1, 1.1), 0.22).set_trans(Tween.TRANS_BACK)
+	tw.tween_property(alert, "scale", Vector2(1.0, 1.0), 0.15)
+	tw.tween_interval(1.8)
+	tw.tween_property(alert, "modulate:a", 0.0, 0.35)
+	tw.tween_callback(alert.queue_free)
