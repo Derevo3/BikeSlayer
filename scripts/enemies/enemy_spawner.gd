@@ -49,6 +49,8 @@ func _spawn_enemy() -> void:
 	# 65% наземные слизни, 35% летающие мыши
 	if randf() < 0.65:
 		var slime = slime_scene.instantiate()
+		if slime.has_method("apply_upgrades"):
+			slime.apply_upgrades()
 		slime.position = Vector2(spawn_x, -16.0)
 		slime.max_health *= hp_mult
 		slime.current_health = slime.max_health

@@ -76,6 +76,16 @@ func die() -> void:
 
 	EventBus.enemy_killed.emit(enemy_name, coins_reward, souls_reward, global_position)
 
+	# Если враг уничтожен на ускорении (Нитро), из него дополнительно выбиваются сверкающие монеты
+	if GameManager.is_boosting:
+		var bonus_level = UpgradeManager.get_upgrade("boost_bounty")
+		var extra_coins = 1 + (bonus_level.level if bonus_level else 0)
+		var coin_scene = preload("res://scenes/world/coin.tscn")
+		for i in range(extra_coins):
+			var coin = coin_scene.instantiate()
+			coin.global_position = global_position + Vector2(randf_range(-15, 15), randf_range(-25, -5))
+			get_parent().add_child(coin)
+
 	# Анимация сокрушения/разлета
 	var tween = create_tween()
 	tween.tween_property(visuals, "scale", Vector2(1.6, 0.3), 0.1)

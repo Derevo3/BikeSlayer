@@ -26,6 +26,15 @@ func update_view() -> void:
 	desc_label.text = up.description
 	if upgrade_id == "bike_upgrade":
 		value_label.text = "Пассивный доход: +%.1f/с" % (up.level * up.value_step)
+	elif upgrade_id == "soul_damage":
+		value_label.text = "Бонус к урону: +%.0f ед." % (up.level * up.value_step)
+	elif upgrade_id == "slime_upgrade":
+		if up.level == 0:
+			value_label.text = "Вид: Обычные зеленые"
+		else:
+			value_label.text = "Вид: Красные (Тир %d)" % up.level
+	elif upgrade_id == "boost_bounty":
+		value_label.text = "Бонус добычи на нитро: +%.0f%%" % (up.level * up.value_step * 100.0)
 	else:
 		value_label.text = "Текущий бонус: +%.1f" % (up.level * up.value_step)
 	

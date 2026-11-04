@@ -84,16 +84,23 @@ func _process_passive_income(delta: float) -> void:
 			passive_coins_buffer -= coins_to_add
 			coins += coins_to_add
 
+func get_boost_reward_multiplier() -> float:
+	if not is_boosting:
+		return 1.0
+	return UpgradeManager.get_value("boost_bounty", 1.0)
+
 func _on_coin_collected(amount: int) -> void:
 	var multiplier: float = UpgradeManager.get_value("coin_greed", 1.0)
-	coins += int(round(amount * multiplier))
+	var boost_mult: float = get_boost_reward_multiplier()
+	coins += int(round(amount * multiplier * boost_mult))
 
 func _on_enemy_killed(_type: String, reward_coins: int, reward_souls: int, _pos: Vector2) -> void:
 	total_enemies_slain += 1
 	var coin_mult: float = UpgradeManager.get_value("coin_greed", 1.0)
 	var soul_mult: float = UpgradeManager.get_value("soul_reaper", 1.0)
-	coins += int(round(reward_coins * coin_mult))
-	souls += int(round(reward_souls * soul_mult))
+	var boost_mult: float = get_boost_reward_multiplier()
+	coins += int(round(reward_coins * coin_mult * boost_mult))
+	souls += int(round(reward_souls * soul_mult * boost_mult))
 
 func can_activate_boost() -> bool:
 	return not is_boosting and boost_cooldown_remaining <= 0.0

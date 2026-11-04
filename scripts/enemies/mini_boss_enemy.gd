@@ -181,9 +181,13 @@ func die() -> void:
 
 	_apply_camera_shake(7.5)
 
-	# Фонтан из золотых монет при сокрушении босса
+	# Фонтан из золотых монет при сокрушении босса (увеличивается во время ускорения!)
 	var coin_scene = preload("res://scenes/world/coin.tscn")
-	for i in range(10):
+	var coin_count = 10
+	if GameManager.is_boosting:
+		var bonus_level = UpgradeManager.get_upgrade("boost_bounty")
+		coin_count += 6 * (1 + (bonus_level.level if bonus_level else 0))
+	for i in range(coin_count):
 		var coin = coin_scene.instantiate()
 		coin.global_position = global_position + Vector2(randf_range(-30, 30), randf_range(-65, -15))
 		get_parent().add_child(coin)

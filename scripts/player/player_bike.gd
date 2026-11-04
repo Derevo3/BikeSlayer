@@ -13,6 +13,7 @@ class_name PlayerBike
 @onready var coin_collector: Area2D = $CoinCollector
 @onready var coin_collision_shape: CollisionShape2D = $CoinCollector/CollisionShape2D
 @onready var bike_visuals: Node2D = $Visuals
+@onready var frame: Node2D = $Visuals/Frame
 @onready var front_wheel: Node2D = $Visuals/FrontWheel
 @onready var back_wheel: Node2D = $Visuals/BackWheel
 @onready var pedals: Node2D = $Visuals/Pedals
@@ -23,6 +24,10 @@ class_name PlayerBike
 var current_speed: float = 300.0
 var attack_timer: float = 0.0
 var is_ramming: bool = false
+var is_tailwhip_attack: bool = false
+var tailwhip_progress: float = 0.0
+var has_dealt_whip_damage: bool = false
+var whip_target: Node = null
 var ram_anim_time: float = 0.0
 var original_visual_pos: Vector2 = Vector2.ZERO
 var current_boss_target: Node = null
@@ -140,10 +145,10 @@ func _physics_process(delta: float) -> void:
 	# 3. Анимация колес и педалей
 	var wheel_rotation_speed = (velocity.x / 24.0) * delta
 	if is_fighting_boss:
-		# При остановке перед боссом заднее колесо пробуксовывает
-		if back_wheel:
+		# Когда не в трюке тейлвипа, заднее колесо слегка пробуксовывает на месте
+		if back_wheel and not is_tailwhip_attack:
 			back_wheel.rotation += (target_speed / 28.0) * delta
-		if pedals:
+		if pedals and not is_tailwhip_attack:
 			pedals.rotation += (target_speed / 36.0) * delta
 	else:
 		if front_wheel:
@@ -153,18 +158,88 @@ func _physics_process(delta: float) -> void:
 		if pedals:
 			pedals.rotation += wheel_rotation_speed * 0.75
 	
-	# Частицы пыли при контакте с землей (включая пробуксовку перед боссом)
+	# Частицы пыли при контакте с землей
 	if dust_particles:
-		dust_particles.emitting = is_on_floor() and (velocity.x > 50.0 or is_fighting_boss)
+		dust_particles.emitting = is_on_floor() and (velocity.x > 50.0 or is_fighting_boss or is_tailwhip_attack)
 
 	# 4. Логика авто-атаки велосипедом
 	_process_auto_attack(delta)
 	
-	# 5. Анимация тарана (выпад передним колесом)
-	if is_ramming:
+	# 5. Анимация атаки
+	if is_tailwhip_attack:
+		var attack_rate = UpgradeManager.get_value("attack_rate", 1.0)
+		var cooldown = 1.0 / max(0.2, attack_rate)
+		# Скорость вращения трюка Footjam Tailwhip адаптируется под кулдаун
+		var whip_speed = max(1.8, 1.0 / (cooldown * 0.85))
+		tailwhip_progress += delta * whip_speed
+		
+		if tailwhip_progress < 1.0:
+			var t = tailwhip_progress # 0.0 -> 1.0
+			var whip_angle = t * TAU # 0 -> 360 градусов
+			
+			# Наклон на переднем колесе (Footjam balance)
+			var stoppie_tilt = sin(t * PI) * 0.38
+			var pivot = Vector2(28.0, 0.0)
+			var rotated_pivot = pivot.rotated(stoppie_tilt)
+			bike_visuals.rotation = stoppie_tilt
+			bike_visuals.position = original_visual_pos + (pivot - rotated_pivot)
+			
+			# 3D-вращение рамы в сторону камеры
+			if frame:
+				frame.is_tailwhip = true
+				frame.whip_angle = whip_angle
+				frame.queue_redraw()
+			
+			# Позиционирование заднего колеса в 3D пространстве
+			if frame and back_wheel:
+				var hub_info = frame.get_whip_pt(-46.0, 28.0, whip_angle)
+				back_wheel.position = hub_info.pos
+				back_wheel.scale.y = hub_info.p
+				# Эффект поворота в 3D (форешортенинг при виде с ребра / к камере)
+				back_wheel.scale.x = max(0.22, abs(cos(whip_angle))) * hub_info.p
+				# Когда крутится в сторону камеры (Z > 0), колесо рисуется ПОВЕРХ всего
+				back_wheel.z_index = 2 if hub_info.z > 0 else -1
+				back_wheel.rotation -= delta * 75.0
+				back_wheel.is_spinning_attack = true
+				back_wheel.queue_redraw()
+			
+			# КУЛЬМИНАЦИЯ УДАРА: когда колесо описало пол-оборота (180°) и впечатывается в босса!
+			if t >= 0.48 and not has_dealt_whip_damage:
+				has_dealt_whip_damage = true
+				if is_instance_valid(whip_target) and not whip_target.is_dead:
+					var total_dmg = get_total_damage()
+					var hit_pos = global_position + Vector2(62, -24)
+					whip_target.take_damage(total_dmg, hit_pos)
+					EventBus.player_attacked.emit(hit_pos)
+					_spawn_ram_impact_fx(hit_pos)
+					
+					# Сплеш-урон по мелким врагам
+					for area in attack_area.get_overlapping_areas():
+						if area.is_in_group("enemy_hitbox"):
+							var other = area.get_parent()
+							if other and other != whip_target and other.has_method("take_damage") and not other.is_dead:
+								other.take_damage(total_dmg, hit_pos)
+					
+					if whip_target.is_dead:
+						current_boss_target = null
+		else:
+			# Завершение трюка Footjam Tailwhip: ловим раму и колесо назад
+			is_tailwhip_attack = false
+			if frame:
+				frame.is_tailwhip = false
+				frame.queue_redraw()
+			bike_visuals.position = original_visual_pos
+			bike_visuals.rotation = 0.0
+			if back_wheel:
+				back_wheel.position = Vector2(-28, 0)
+				back_wheel.scale = Vector2(1, 1)
+				back_wheel.z_index = 0
+				back_wheel.is_spinning_attack = false
+				back_wheel.queue_redraw()
+	elif is_ramming:
 		ram_anim_time += delta * 12.0
 		if ram_anim_time < PI:
-			# Выпад вперед и подъем на вилли (удар передним колесом)
+			# Обычный выпад вперед и подъем на вилли (удар передним колесом на ходу)
 			bike_visuals.position.x = original_visual_pos.x + sin(ram_anim_time) * 18.0
 			bike_visuals.rotation = -sin(ram_anim_time) * 0.22
 		else:
@@ -178,7 +253,7 @@ func _process_auto_attack(delta: float) -> void:
 	
 	attack_timer += delta
 	
-	# Если заблокированы перед боссом — непрерывно тараним его по откату
+	# Если заблокированы перед боссом — непрерывно запускаем атаку по откату
 	if is_instance_valid(current_boss_target):
 		if current_boss_target.is_dead:
 			current_boss_target = null
@@ -186,8 +261,6 @@ func _process_auto_attack(delta: float) -> void:
 			if attack_timer >= cooldown:
 				_perform_bike_ram(current_boss_target)
 				attack_timer = 0.0
-				if current_boss_target.is_dead:
-					current_boss_target = null
 			return
 	
 	if attack_timer >= cooldown:
@@ -206,24 +279,37 @@ func _process_auto_attack(delta: float) -> void:
 							enemy.set_engaged(true)
 					break
 
+func get_total_damage() -> float:
+	var soul_dmg_bonus = UpgradeManager.get_value("soul_damage", 0.0)
+	var base_dmg = ram_damage + soul_dmg_bonus
+	return base_dmg * (2.0 if GameManager.is_boosting else 1.0)
+
 func _perform_bike_ram(enemy: Node) -> void:
-	is_ramming = true
-	ram_anim_time = 0.0
+	var is_boss_duel = (enemy == current_boss_target) or (is_instance_valid(current_boss_target) and not current_boss_target.is_dead)
 	
-	var total_dmg = ram_damage * (2.0 if GameManager.is_boosting else 1.0)
-	
-	var hit_pos = ram_impact_spawner.global_position if ram_impact_spawner else global_position + Vector2(40, 0)
-	enemy.take_damage(total_dmg, hit_pos)
-	
-	# Сплеш-урон по остальным мелким врагам в зоне контакта
-	for area in attack_area.get_overlapping_areas():
-		if area.is_in_group("enemy_hitbox"):
-			var other = area.get_parent()
-			if other and other != enemy and other.has_method("take_damage") and not other.is_dead:
-				other.take_damage(total_dmg, hit_pos)
-	
-	EventBus.player_attacked.emit(hit_pos)
-	_spawn_ram_impact_fx(hit_pos)
+	if is_boss_duel:
+		is_tailwhip_attack = true
+		is_ramming = false
+		tailwhip_progress = 0.0
+		has_dealt_whip_damage = false
+		whip_target = enemy
+	else:
+		is_ramming = true
+		is_tailwhip_attack = false
+		ram_anim_time = 0.0
+		var total_dmg = get_total_damage()
+		var hit_pos = ram_impact_spawner.global_position if ram_impact_spawner else global_position + Vector2(40, 0)
+		enemy.take_damage(total_dmg, hit_pos)
+		
+		# Сплеш-урон по остальным мелким врагам в зоне контакта
+		for area in attack_area.get_overlapping_areas():
+			if area.is_in_group("enemy_hitbox"):
+				var other = area.get_parent()
+				if other and other != enemy and other.has_method("take_damage") and not other.is_dead:
+					other.take_damage(total_dmg, hit_pos)
+		
+		EventBus.player_attacked.emit(hit_pos)
+		_spawn_ram_impact_fx(hit_pos)
 
 func _spawn_ram_impact_fx(pos: Vector2) -> void:
 	var fx_scene = preload("res://scenes/player/ram_impact_effect.tscn")
