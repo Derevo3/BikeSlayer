@@ -120,7 +120,7 @@ func _physics_process(delta: float) -> void:
 			velocity.x = min(target_speed, (desired_x - global_position.x) / max(delta, 0.001))
 		else:
 			velocity.x = 0.0
-			global_position.x = desired_x
+			global_position.x = move_toward(global_position.x, desired_x, target_speed * delta)
 	else:
 		velocity.x = target_speed
 	
@@ -258,29 +258,38 @@ func _process_auto_attack(delta: float) -> void:
 		if current_boss_target.is_dead:
 			current_boss_target = null
 		else:
-			if attack_timer >= cooldown:
+			var boss_duel_cooldown = (cooldown * 0.6) if GameManager.is_boosting else cooldown
+			if attack_timer >= boss_duel_cooldown:
 				_perform_bike_ram(current_boss_target)
 				attack_timer = 0.0
 			return
 	
-	# При обычном движении: атакуем по откату или мгновенно при первом контакте с боссом / на ускорении
+	# При обычном движении:
 	var targets = attack_area.get_overlapping_areas()
-	if targets.size() > 0:
-		for area in targets:
-			if area.is_in_group("enemy_hitbox"):
-				var enemy = area.get_parent()
-				if enemy and enemy.has_method("take_damage") and not enemy.is_dead:
-					var is_fresh_boss = enemy.is_in_group("boss") and enemy != current_boss_target
-					if attack_timer >= cooldown or is_fresh_boss or GameManager.is_boosting:
-						_perform_bike_ram(enemy)
-						attack_timer = 0.0
-						
-						# Если это босс и он пережил таранный удар — останавливаемся перед ним для дуэли
-						if enemy.is_in_group("boss") and not enemy.is_dead:
-							current_boss_target = enemy
-							if enemy.has_method("set_engaged"):
-								enemy.set_engaged(true)
-						break
+	if targets.is_empty():
+		# Пока впереди нет врагов, кулдаун готов для мгновенного первого тарана при контакте
+		attack_timer = max(attack_timer, cooldown)
+		return
+	
+	# Скорость атаки при ускорении выше, но строго ограничена по частоте для предотвращения спама кадров
+	var effective_cooldown = (cooldown * 0.35) if GameManager.is_boosting else cooldown
+	effective_cooldown = max(0.14, effective_cooldown)
+	
+	for area in targets:
+		if area.is_in_group("enemy_hitbox"):
+			var enemy = area.get_parent()
+			if enemy and enemy.has_method("take_damage") and not enemy.is_dead:
+				var is_fresh_boss = enemy.is_in_group("boss") and enemy != current_boss_target
+				if attack_timer >= effective_cooldown or is_fresh_boss:
+					_perform_bike_ram(enemy)
+					attack_timer = 0.0
+					
+					# Если это босс и он пережил таранный удар — останавливаемся перед ним для дуэли
+					if enemy.is_in_group("boss") and not enemy.is_dead:
+						current_boss_target = enemy
+						if enemy.has_method("set_engaged"):
+							enemy.set_engaged(true)
+					break
 
 func get_total_damage() -> float:
 	var soul_dmg_bonus = UpgradeManager.get_value("soul_damage", 0.0)
@@ -317,5 +326,5 @@ func _perform_bike_ram(enemy: Node) -> void:
 func _spawn_ram_impact_fx(pos: Vector2) -> void:
 	var fx_scene = preload("res://scenes/player/ram_impact_effect.tscn")
 	var fx = fx_scene.instantiate()
-	fx.global_position = pos
 	get_parent().add_child(fx)
+	fx.global_position = pos

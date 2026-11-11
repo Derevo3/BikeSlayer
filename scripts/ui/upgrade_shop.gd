@@ -28,6 +28,8 @@ func _populate_upgrades() -> void:
 		card_instances.append(card)
 
 func _refresh_cards() -> void:
+	if not visible:
+		return
 	for card in card_instances:
 		if is_instance_valid(card):
 			card.update_view()

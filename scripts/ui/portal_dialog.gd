@@ -45,7 +45,7 @@ const DIMENSIONS_INFO = [
 
 func _ready() -> void:
 	close_button.pressed.connect(toggle_visibility)
-	GameManager.stats_changed.connect(refresh_locations)
+	EventBus.dimension_changed.connect(func(_dim_id): refresh_locations())
 	refresh_locations()
 
 func toggle_visibility() -> void:

@@ -189,8 +189,8 @@ func die() -> void:
 		coin_count += 6 * (1 + (bonus_level.level if bonus_level else 0))
 	for i in range(coin_count):
 		var coin = coin_scene.instantiate()
-		coin.global_position = global_position + Vector2(randf_range(-30, 30), randf_range(-65, -15))
 		get_parent().add_child(coin)
+		coin.global_position = global_position + Vector2(randf_range(-30, 30), randf_range(-65, -15))
 
 	EventBus.enemy_killed.emit(enemy_name, coins_reward, souls_reward, global_position)
 

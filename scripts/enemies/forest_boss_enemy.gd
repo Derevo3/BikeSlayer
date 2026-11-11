@@ -126,9 +126,9 @@ func _draw_boss() -> void:
 	visuals.draw_circle(Vector2(24, -30), 10.0, moss_color.darkened(0.15))
 
 	# 5. Развесистые рога-ветви на голове Лешего
-	var horn_l = PackedVector2Array([Vector2(-20, -68), Vector2(-44, -94), Vector2(-36, -82), Vector2(-14, -72)])
+	var horn_l = PackedVector2Array([Vector2(-20, -68), Vector2(-36, -82), Vector2(-44, -94), Vector2(-14, -72)])
 	var horn_sub_l = PackedVector2Array([Vector2(-36, -82), Vector2(-48, -78), Vector2(-32, -75)])
-	var horn_r = PackedVector2Array([Vector2(20, -68), Vector2(44, -94), Vector2(36, -82), Vector2(14, -72)])
+	var horn_r = PackedVector2Array([Vector2(20, -68), Vector2(36, -82), Vector2(44, -94), Vector2(14, -72)])
 	var horn_sub_r = PackedVector2Array([Vector2(36, -82), Vector2(48, -78), Vector2(32, -75)])
 	visuals.draw_colored_polygon(horn_l, bark_color.darkened(0.3))
 	visuals.draw_colored_polygon(horn_sub_l, bark_color.darkened(0.3))
@@ -190,8 +190,8 @@ func die() -> void:
 		coin_count += 6 * (1 + (bonus_level.level if bonus_level else 0))
 	for i in range(coin_count):
 		var coin = coin_scene.instantiate()
-		coin.global_position = global_position + Vector2(randf_range(-30, 30), randf_range(-65, -15))
 		get_parent().add_child(coin)
+		coin.global_position = global_position + Vector2(randf_range(-30, 30), randf_range(-65, -15))
 
 	EventBus.enemy_killed.emit(enemy_name, coins_reward, souls_reward, global_position)
 

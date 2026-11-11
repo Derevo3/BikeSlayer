@@ -54,8 +54,8 @@ func take_damage(amount: float, hit_pos: Vector2) -> void:
 
 func _spawn_damage_number(amount: float, pos: Vector2) -> void:
 	var dmg_node = damage_num_scene.instantiate()
-	dmg_node.global_position = pos + Vector2(randf_range(-10, 10), -20)
 	get_parent().add_child(dmg_node)
+	dmg_node.global_position = pos + Vector2(randf_range(-10, 10), -20)
 	dmg_node.setup(amount, GameManager.is_boosting)
 
 func _play_hit_flash() -> void:
@@ -83,8 +83,8 @@ func die() -> void:
 		var coin_scene = preload("res://scenes/world/coin.tscn")
 		for i in range(extra_coins):
 			var coin = coin_scene.instantiate()
-			coin.global_position = global_position + Vector2(randf_range(-15, 15), randf_range(-25, -5))
 			get_parent().add_child(coin)
+			coin.global_position = global_position + Vector2(randf_range(-15, 15), randf_range(-25, -5))
 
 	# Анимация сокрушения/разлета
 	var tween = create_tween()
