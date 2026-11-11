@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3 uid="uid://bvq7m8a1k2pq5"]
+
+[ext_resource type="Script" path="res://scripts/enemies/treant_enemy.gd" id="1_treant"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(30, 40)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hurtbox"]
+radius = 25.0
+
+[node name="TreantEnemy" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("1_treant")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -20)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Visuals" type="Node2D" parent="."]
+position = Vector2(0, 0)
+
+[node name="Hurtbox" type="Area2D" parent="." groups=["enemy_hitbox"]]
+position = Vector2(0, -22)
+collision_layer = 4
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_hurtbox")

@@ -108,18 +108,6 @@ func _physics_process(delta: float) -> void:
 		else:
 			is_fighting_boss = true
 	
-	# Если цель еще не зафиксирована, проверяем наличие живого босса в зоне атаки
-	if not is_fighting_boss and attack_area:
-		for area in attack_area.get_overlapping_areas():
-			if area.is_in_group("enemy_hitbox"):
-				var enemy = area.get_parent()
-				if enemy and enemy.is_in_group("boss") and not enemy.is_dead:
-					current_boss_target = enemy
-					is_fighting_boss = true
-					if enemy.has_method("set_engaged"):
-						enemy.set_engaged(true)
-					break
-	
 	# 2. Горизонтальное движение (автоматическое или удержание перед боссом)
 	var target_speed = current_speed
 	if GameManager.is_boosting:
@@ -222,6 +210,18 @@ func _physics_process(delta: float) -> void:
 					
 					if whip_target.is_dead:
 						current_boss_target = null
+						is_tailwhip_attack = false
+						if frame:
+							frame.is_tailwhip = false
+							frame.queue_redraw()
+						bike_visuals.position = original_visual_pos
+						bike_visuals.rotation = 0.0
+						if back_wheel:
+							back_wheel.position = Vector2(-28, 0)
+							back_wheel.scale = Vector2(1, 1)
+							back_wheel.z_index = 0
+							back_wheel.is_spinning_attack = false
+							back_wheel.queue_redraw()
 		else:
 			# Завершение трюка Footjam Tailwhip: ловим раму и колесо назад
 			is_tailwhip_attack = false
@@ -253,7 +253,7 @@ func _process_auto_attack(delta: float) -> void:
 	
 	attack_timer += delta
 	
-	# Если заблокированы перед боссом — непрерывно запускаем атаку по откату
+	# Если заблокированы перед боссом в дуэли — непрерывно запускаем атаку по откату
 	if is_instance_valid(current_boss_target):
 		if current_boss_target.is_dead:
 			current_boss_target = null
@@ -263,21 +263,24 @@ func _process_auto_attack(delta: float) -> void:
 				attack_timer = 0.0
 			return
 	
-	if attack_timer >= cooldown:
-		var targets = attack_area.get_overlapping_areas()
+	# При обычном движении: атакуем по откату или мгновенно при первом контакте с боссом / на ускорении
+	var targets = attack_area.get_overlapping_areas()
+	if targets.size() > 0:
 		for area in targets:
 			if area.is_in_group("enemy_hitbox"):
 				var enemy = area.get_parent()
 				if enemy and enemy.has_method("take_damage") and not enemy.is_dead:
-					_perform_bike_ram(enemy)
-					attack_timer = 0.0
-					
-					# Если это босс и он пережил удар — останавливаемся перед ним!
-					if enemy.is_in_group("boss") and not enemy.is_dead:
-						current_boss_target = enemy
-						if enemy.has_method("set_engaged"):
-							enemy.set_engaged(true)
-					break
+					var is_fresh_boss = enemy.is_in_group("boss") and enemy != current_boss_target
+					if attack_timer >= cooldown or is_fresh_boss or GameManager.is_boosting:
+						_perform_bike_ram(enemy)
+						attack_timer = 0.0
+						
+						# Если это босс и он пережил таранный удар — останавливаемся перед ним для дуэли
+						if enemy.is_in_group("boss") and not enemy.is_dead:
+							current_boss_target = enemy
+							if enemy.has_method("set_engaged"):
+								enemy.set_engaged(true)
+						break
 
 func get_total_damage() -> float:
 	var soul_dmg_bonus = UpgradeManager.get_value("soul_damage", 0.0)

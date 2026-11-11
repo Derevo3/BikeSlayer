@@ -104,6 +104,13 @@ func _init_upgrades() -> void:
 		10, 1.5, 0.0, 1.0, "souls"
 	))
 
+	_register(Upgrade.new(
+		"portal_unlock",
+		"Межпространственный портал",
+		"Открывает портал в верхнем левом углу для мгновенных перемещений между мирами (Пригород, Древний лес, Пустошь, Киберполис)",
+		8, 1.0, 0.0, 1.0, "souls", 1
+	))
+
 func _register(upgrade: Upgrade) -> void:
 	upgrades[upgrade.id] = upgrade
 

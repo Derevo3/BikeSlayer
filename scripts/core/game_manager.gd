@@ -31,7 +31,7 @@ var passive_coins_buffer: float = 0.0
 
 # Текущий биом/измерение
 var current_dimension: String = "suburb"
-const AVAILABLE_DIMENSIONS: Array[String] = ["suburb", "wasteland", "cyber"]
+const AVAILABLE_DIMENSIONS: Array[String] = ["suburb", "forest", "wasteland", "cyber"]
 
 func change_dimension(dim_id: String) -> void:
 	if dim_id in AVAILABLE_DIMENSIONS and current_dimension != dim_id:
@@ -47,6 +47,7 @@ func cycle_dimension() -> void:
 func get_dimension_enemy_mult() -> float:
 	match current_dimension:
 		"suburb": return 1.0
+		"forest": return 1.6
 		"wasteland": return 2.2
 		"cyber": return 4.5
 		_: return 1.0
@@ -54,6 +55,7 @@ func get_dimension_enemy_mult() -> float:
 func get_dimension_reward_mult() -> float:
 	match current_dimension:
 		"suburb": return 1.0
+		"forest": return 1.8
 		"wasteland": return 2.5
 		"cyber": return 5.0
 		_: return 1.0

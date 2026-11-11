@@ -35,12 +35,17 @@ func update_view() -> void:
 			value_label.text = "Вид: Красные (Тир %d)" % up.level
 	elif upgrade_id == "boost_bounty":
 		value_label.text = "Бонус добычи на нитро: +%.0f%%" % (up.level * up.value_step * 100.0)
+	elif upgrade_id == "portal_unlock":
+		if up.level == 0:
+			value_label.text = "Статус: Закрыт (купите для разблокировки)"
+		else:
+			value_label.text = "Статус: АКТИВИРОВАН (кнопка в левом верхнем углу)"
 	else:
 		value_label.text = "Текущий бонус: +%.1f" % (up.level * up.value_step)
 	
 	var cost = up.get_cost()
 	if cost < 0:
-		buy_button.text = "МАКС."
+		buy_button.text = "ОТКРЫТО" if upgrade_id == "portal_unlock" else "МАКС."
 		buy_button.disabled = true
 	else:
 		var curr_name = "Зол." if up.currency == "coins" else "Душ"

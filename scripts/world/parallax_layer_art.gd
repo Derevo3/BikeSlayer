@@ -27,6 +27,11 @@ func _draw_sky(dim: String) -> void:
 	var sun_color: Color
 	
 	match dim:
+		"forest":
+			c_top = Color(0.02, 0.08, 0.05)
+			c_mid = Color(0.06, 0.20, 0.12)
+			c_bot = Color(0.14, 0.35, 0.22)
+			sun_color = Color(0.65, 0.95, 0.55)
 		"wasteland":
 			c_top = Color(0.16, 0.05, 0.06)
 			c_mid = Color(0.36, 0.12, 0.10)
@@ -51,13 +56,14 @@ func _draw_sky(dim: String) -> void:
 	])
 	draw_polygon(points, PackedColorArray([c_top, c_top, c_mid, c_bot]))
 	
-	# Светило (Солнце / Луна / Неоновое солнце)
+	# Светило (Солнце / Луна / Неоновое солнце / Лесная мистическая луна)
 	draw_circle(Vector2(width * 0.7, -180), 45.0, sun_color)
 	draw_circle(Vector2(width * 0.7, -180), 55.0, Color(sun_color.r, sun_color.g, sun_color.b, 0.25))
 
 func _draw_mountains(dim: String) -> void:
 	var color: Color
 	match dim:
+		"forest": color = Color(0.04, 0.14, 0.09)
 		"wasteland": color = Color(0.18, 0.08, 0.08)
 		"cyber": color = Color(0.08, 0.10, 0.22)
 		_: color = Color(0.16, 0.12, 0.24)
@@ -76,6 +82,9 @@ func _draw_hills(dim: String) -> void:
 	var color: Color
 	var tree_color: Color
 	match dim:
+		"forest":
+			color = Color(0.06, 0.18, 0.10)
+			tree_color = Color(0.03, 0.11, 0.06)
 		"wasteland":
 			color = Color(0.14, 0.08, 0.07)
 			tree_color = Color(0.08, 0.05, 0.05)
@@ -96,13 +105,39 @@ func _draw_hills(dim: String) -> void:
 	pts.append(Vector2(width, 100))
 	draw_colored_polygon(PackedVector2Array(pts), color)
 
-	# Элементы силуэта (деревья или кибер-вышки)
-	for tree_x in range(40, int(width), 110):
+	# Элементы силуэта (вековые сосны, деревья или кибер-вышки)
+	for tree_x in range(30, int(width), 85):
 		var ty = sin(tree_x * 0.008) * 35.0 - 55.0
 		if dim == "cyber":
 			# Антенны / неоновые вышки
 			draw_line(Vector2(tree_x, ty), Vector2(tree_x, ty - 40), tree_color, 2.0)
 			draw_circle(Vector2(tree_x, ty - 40), 3.0, Color(1, 0.2, 0.6))
+		elif dim == "forest":
+			# Дремучие хвойные ели с несколькими ярусами веток
+			var trunk_h = 48.0
+			draw_line(Vector2(tree_x, ty), Vector2(tree_x, ty - trunk_h), Color(0.18, 0.12, 0.08), 3.0)
+			# Ярус 1 (низкий)
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(tree_x, ty - trunk_h * 0.7),
+				Vector2(tree_x - 18, ty - trunk_h * 0.25),
+				Vector2(tree_x + 18, ty - trunk_h * 0.25)
+			]), tree_color)
+			# Ярус 2 (средний)
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(tree_x, ty - trunk_h * 0.9),
+				Vector2(tree_x - 14, ty - trunk_h * 0.5),
+				Vector2(tree_x + 14, ty - trunk_h * 0.5)
+			]), tree_color.lightened(0.08))
+			# Ярус 3 (верхушка)
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(tree_x, ty - trunk_h - 10),
+				Vector2(tree_x - 9, ty - trunk_h * 0.75),
+				Vector2(tree_x + 9, ty - trunk_h * 0.75)
+			]), tree_color.lightened(0.15))
+			# Парящий светлячок возле каждого второго дерева
+			if (tree_x % 170) < 90:
+				draw_circle(Vector2(tree_x + 12, ty - trunk_h * 0.6), 2.2, Color(0.6, 1.0, 0.4, 0.85))
+				draw_circle(Vector2(tree_x + 12, ty - trunk_h * 0.6), 4.5, Color(0.6, 1.0, 0.4, 0.25))
 		else:
 			var p1 = Vector2(tree_x, ty - 30)
 			var p2 = Vector2(tree_x - 12, ty)

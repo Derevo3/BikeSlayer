@@ -1,7 +1,7 @@
 extends CanvasLayer
 class_name GameHUD
 
-## HUD игры: ресурсы, дистанция, способности и вызов магазина
+## HUD игры: ресурсы, дистанция, способности, портал и магазин улучшений
 
 @onready var coins_label: Label = $RootUI/TopBar/Margin/HBox/Currencies/CoinsBox/CoinsLabel
 @onready var souls_label: Label = $RootUI/TopBar/Margin/HBox/Currencies/SoulsBox/SoulsLabel
@@ -12,10 +12,13 @@ class_name GameHUD
 @onready var boost_button: Button = $RootUI/BottomControls/HBox/BoostButton
 @onready var boost_label: Label = $RootUI/BottomControls/HBox/BoostButton/Label
 @onready var jump_button: Button = $RootUI/BottomControls/HBox/JumpButton
+@onready var portal_dialog: Control = $RootUI/PortalDialog
 @onready var upgrade_shop: Control = $RootUI/UpgradeShop
 @onready var warp_flash: ColorRect = $RootUI/WarpFlash
 
 var player: Node = null
+var portal_scene = preload("res://scenes/world/dimensional_portal.tscn")
+var active_portal: Node2D = null
 
 func _ready() -> void:
 	var gm = get_node_or_null("/root/GameManager")
@@ -28,17 +31,37 @@ func _ready() -> void:
 		bus.dimension_changed.connect(_on_dimension_changed)
 		bus.boss_spawned.connect(_on_boss_spawned)
 	
+	UpgradeManager.upgrades_updated.connect(_update_portal_button_state)
+	
+	if portal_dialog:
+		portal_dialog.location_selected.connect(_on_location_selected)
+	
 	shop_button.pressed.connect(_on_shop_pressed)
 	portal_button.pressed.connect(_on_portal_pressed)
 	boost_button.pressed.connect(_on_boost_pressed)
 	jump_button.pressed.connect(_on_jump_pressed)
 	
 	_update_stats_display()
+	_update_portal_button_state()
 	if gm:
 		_update_distance_display(gm.distance_traveled)
 
 func _process(_delta: float) -> void:
 	_update_boost_ui()
+
+func _update_portal_button_state() -> void:
+	if not portal_button:
+		return
+		
+	var is_unlocked = UpgradeManager.get_value("portal_unlock", 0.0) >= 1.0
+	if is_unlocked:
+		portal_button.text = "🌀 ПОРТАЛ"
+		portal_button.modulate = Color(0.85, 0.55, 1.0)
+		portal_button.tooltip_text = "Межпространственный портал: выбор локации"
+	else:
+		portal_button.text = "🔒 ПОРТАЛ"
+		portal_button.modulate = Color(0.65, 0.65, 0.75, 0.85)
+		portal_button.tooltip_text = "Портал закрыт. Разблокируйте его в Магазине за 8 душ!"
 
 func _update_stats_display() -> void:
 	var gm = get_node_or_null("/root/GameManager")
@@ -62,10 +85,13 @@ func _on_dimension_changed(_dim_id: String) -> void:
 	if gm:
 		_update_distance_display(gm.distance_traveled)
 		_update_stats_display()
+	_play_dimension_warp_fx()
+	_show_notification("✨ Добро пожаловать в: %s!" % _get_dimension_title(GameManager.current_dimension))
 
 func _get_dimension_title(dim_id: String) -> String:
 	match dim_id:
 		"suburb": return "Пригород"
+		"forest": return "Древний лес"
 		"wasteland": return "Пустошь"
 		"cyber": return "Неоновый мегаполис"
 		_: return "Дорога"
@@ -93,15 +119,43 @@ func _on_shop_pressed() -> void:
 		upgrade_shop.toggle_visibility()
 
 func _on_portal_pressed() -> void:
-	var gm = get_node_or_null("/root/GameManager")
-	if gm:
-		gm.cycle_dimension()
-		_play_dimension_warp_fx()
+	var is_unlocked = UpgradeManager.get_value("portal_unlock", 0.0) >= 1.0
+	if not is_unlocked:
+		_show_notification("⚠️ Портал заблокирован! Откройте его в Магазине улучшений за 8 душ.")
+		if upgrade_shop and not upgrade_shop.visible:
+			upgrade_shop.toggle_visibility()
+		return
+		
+	if portal_dialog:
+		portal_dialog.toggle_visibility()
+
+func _on_location_selected(dim_id: String) -> void:
+	_spawn_portal_ahead(dim_id)
+
+func _spawn_portal_ahead(dim_id: String) -> void:
+	if not player:
+		player = get_tree().get_first_node_in_group("player")
+	if not player:
+		return
+
+	if is_instance_valid(active_portal):
+		active_portal.queue_free()
+
+	var portal = portal_scene.instantiate()
+	var spawn_dist = 560.0
+	var portal_x = player.global_position.x + spawn_dist
+	portal.position = Vector2(portal_x, 0.0)
+	portal.setup(dim_id)
+	
+	get_tree().current_scene.add_child(portal)
+	active_portal = portal
+	
+	_show_notification("🌀 Портал в %s открыт впереди! Въезжайте в него!" % _get_dimension_title(dim_id))
 
 func _play_dimension_warp_fx() -> void:
 	if not warp_flash:
 		return
-	warp_flash.modulate.a = 0.8
+	warp_flash.modulate.a = 0.85
 	var tween = create_tween()
 	tween.tween_property(warp_flash, "modulate:a", 0.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
@@ -154,3 +208,30 @@ func _show_boss_alert(boss_name: String) -> void:
 	tw.tween_interval(1.8)
 	tw.tween_property(alert, "modulate:a", 0.0, 0.35)
 	tw.tween_callback(alert.queue_free)
+
+func _show_notification(text: String) -> void:
+	var note = Label.new()
+	note.text = text
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	note.add_theme_font_size_override("font_size", 17)
+	note.add_theme_color_override("font_color", Color(0.9, 0.8, 1.0))
+	note.add_theme_color_override("font_outline_color", Color(0.1, 0.05, 0.15, 0.95))
+	note.add_theme_constant_override("outline_size", 4)
+	
+	note.anchors_preset = Control.PRESET_CENTER_TOP
+	note.position = Vector2(0, 72)
+	note.size = Vector2(1280, 36)
+	$RootUI.add_child(note)
+	
+	note.modulate.a = 0.0
+	note.scale = Vector2(0.9, 0.9)
+	note.pivot_offset = Vector2(640, 18)
+	
+	var tw = create_tween()
+	tw.tween_property(note, "modulate:a", 1.0, 0.2)
+	tw.parallel().tween_property(note, "scale", Vector2(1.05, 1.05), 0.2)
+	tw.tween_property(note, "scale", Vector2(1.0, 1.0), 0.1)
+	tw.tween_interval(2.2)
+	tw.tween_property(note, "modulate:a", 0.0, 0.35)
+	tw.tween_callback(note.queue_free)
