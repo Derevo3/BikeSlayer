@@ -15,7 +15,7 @@ func _init() -> void:
 	coins_reward = 8
 	souls_reward = 3
 	enemy_name = "Древень"
-	base_speed = 38.0
+	base_speed = 0.0
 	flying = false
 
 func _ready() -> void:
@@ -28,13 +28,23 @@ func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
 	
-	# Неуклюжая переваливающаяся походка лесного пня
-	anim_phase += delta * 6.5
-	var step_wobble = sin(anim_phase)
-	if visuals:
-		visuals.rotation = step_wobble * 0.08
-		visuals.position.y = -abs(sin(anim_phase * 2.0)) * 3.5
-		visuals.queue_redraw()
+	var player = get_tree().get_first_node_in_group("player")
+	var is_world_stopped = player and "velocity" in player and abs(player.velocity.x) < 1.0
+	
+	if is_world_stopped:
+		# При остановке мира древень неподвижно замирает как вековое дерево
+		if visuals:
+			visuals.rotation = move_toward(visuals.rotation, 0.0, delta * 3.0)
+			visuals.position.y = move_toward(visuals.position.y, 0.0, delta * 8.0)
+			visuals.queue_redraw()
+	else:
+		# Покачивание лесного стража на ветру
+		anim_phase += delta * 6.5
+		var step_wobble = sin(anim_phase)
+		if visuals:
+			visuals.rotation = step_wobble * 0.08
+			visuals.position.y = -abs(sin(anim_phase * 2.0)) * 3.5
+			visuals.queue_redraw()
 
 func _draw_treant() -> void:
 	# 1. Тень

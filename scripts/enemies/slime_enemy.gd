@@ -9,7 +9,7 @@ func _init() -> void:
 	coins_reward = 2
 	souls_reward = 1
 	enemy_name = "Слизень"
-	base_speed = 40.0
+	base_speed = 0.0
 	flying = false
 
 ## Применяет улучшения противника перед спавном
@@ -35,10 +35,14 @@ func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
 	
-	# Анимация сжатия и растяжения при ходьбе
-	anim_phase += delta * (8.0 if is_red_slime else 7.0)
-	var squash = 1.0 + sin(anim_phase) * 0.18
-	var stretch = 1.0 - sin(anim_phase) * 0.15
+	# Пульсация слизня на земле (замедляется до спокойного дыхания при остановке мира)
+	var player = get_tree().get_first_node_in_group("player")
+	var is_world_stopped = player and "velocity" in player and abs(player.velocity.x) < 1.0
+	var speed_mult = 0.25 if is_world_stopped else 1.0
+	
+	anim_phase += delta * (8.0 if is_red_slime else 7.0) * speed_mult
+	var squash = 1.0 + sin(anim_phase) * (0.06 if is_world_stopped else 0.18)
+	var stretch = 1.0 - sin(anim_phase) * (0.05 if is_world_stopped else 0.15)
 	if visuals:
 		visuals.scale = Vector2(stretch, squash)
 		visuals.queue_redraw()

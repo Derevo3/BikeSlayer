@@ -13,9 +13,16 @@ var active_chunks: Array[Node2D] = []
 var next_chunk_x: float = -640.0 # Начинаем немного позади стартовой позиции игрока
 
 func _ready() -> void:
+	EventBus.dimension_changed.connect(_on_dimension_changed)
 	# Спавним начальные чанки, чтобы мир был готов сразу
 	for i in range(active_chunks_ahead + 2):
 		_spawn_next_chunk()
+
+func _on_dimension_changed(_dim_id: String) -> void:
+	# При смене локации карта обновляется: перерисовываем все активные чанки
+	for chunk in active_chunks:
+		if is_instance_valid(chunk):
+			chunk.queue_redraw()
 
 func _process(_delta: float) -> void:
 	if not player:

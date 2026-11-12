@@ -34,7 +34,7 @@ var current_dimension: String = "suburb"
 const AVAILABLE_DIMENSIONS: Array[String] = ["suburb", "forest", "wasteland", "cyber"]
 
 func change_dimension(dim_id: String) -> void:
-	if dim_id in AVAILABLE_DIMENSIONS and current_dimension != dim_id:
+	if dim_id in AVAILABLE_DIMENSIONS:
 		current_dimension = dim_id
 		EventBus.dimension_changed.emit(current_dimension)
 		stats_changed.emit()

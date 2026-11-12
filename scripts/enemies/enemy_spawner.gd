@@ -23,6 +23,33 @@ var regular_enemies_spawned: int = 0
 var active_boss: Node = null
 
 func _ready() -> void:
+	EventBus.dimension_changed.connect(_on_dimension_changed)
+	_schedule_next_spawn()
+
+func _on_dimension_changed(_dim_id: String) -> void:
+	clear_all_enemies()
+
+## Уничтожает всех существующих противников на карте при смене локации
+func clear_all_enemies() -> void:
+	# 1. Удаляем всех детей внутри спавнера
+	for child in get_children():
+		if is_instance_valid(child):
+			child.queue_free()
+	
+	# 2. Удаляем всех врагов в глобальных группах "enemy" и "boss"
+	var enemies = get_tree().get_nodes_in_group("enemy")
+	for e in enemies:
+		if is_instance_valid(e):
+			e.queue_free()
+	
+	var bosses = get_tree().get_nodes_in_group("boss")
+	for b in bosses:
+		if is_instance_valid(b):
+			b.queue_free()
+	
+	# 3. Сбрасываем босса и счетчики
+	active_boss = null
+	regular_enemies_spawned = 0
 	_schedule_next_spawn()
 
 func _schedule_next_spawn() -> void:
@@ -31,6 +58,12 @@ func _schedule_next_spawn() -> void:
 
 func _process(delta: float) -> void:
 	if not player:
+		return
+	
+	# Не спавним новых врагов, пока активен босс или пока игрок остановлен
+	if is_instance_valid(active_boss) and not active_boss.is_dead:
+		return
+	if "velocity" in player and abs(player.velocity.x) < 1.0:
 		return
 	
 	timer += delta

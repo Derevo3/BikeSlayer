@@ -16,7 +16,7 @@ func _init() -> void:
 	coins_reward = 10
 	souls_reward = 4
 	enemy_name = "Шершень"
-	base_speed = 85.0
+	base_speed = 0.0
 	flying = true
 
 func _ready() -> void:
@@ -30,9 +30,15 @@ func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
 	
-	wing_phase += delta * 36.0
-	# Волнообразное жужжащее парение в воздухе
-	position.y = base_y + sin(wing_phase * 0.25) * 14.0 + cos(wing_phase * 0.12) * 5.0
+	var player = get_tree().get_first_node_in_group("player")
+	var is_world_stopped = player and "velocity" in player and abs(player.velocity.x) < 1.0
+	var buzz_mult = 0.35 if is_world_stopped else 1.0
+	
+	wing_phase += delta * 36.0 * buzz_mult
+	# Волнообразное жужжащее парение в воздухе (замирает при остановке мира)
+	var amp_y = 3.0 if is_world_stopped else 14.0
+	var amp_x = 1.0 if is_world_stopped else 5.0
+	position.y = base_y + sin(wing_phase * 0.25) * amp_y + cos(wing_phase * 0.12) * amp_x
 	if visuals:
 		visuals.queue_redraw()
 

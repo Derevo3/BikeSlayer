@@ -18,12 +18,13 @@ func _init() -> void:
 	coins_reward = 50
 	souls_reward = 15
 	enemy_name = "Голиаф"
-	base_speed = 30.0
+	base_speed = 0.0
 	flying = false
 
 func _ready() -> void:
 	super._ready()
 	add_to_group("boss")
+	add_to_group("enemy")
 	if visuals:
 		visuals.draw.connect(_draw_boss)
 	if hp_bar:
@@ -32,20 +33,19 @@ func _ready() -> void:
 
 func set_engaged(p_engaged: bool) -> void:
 	is_engaged = p_engaged
-	if is_engaged:
-		velocity.x = 0.0
+	velocity = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
 
-	if is_engaged:
-		velocity.x = 0.0
-		if not is_on_floor():
-			velocity.y += gravity * delta
-		move_and_slide()
+	if not is_on_floor():
+		velocity.y += gravity * delta
 	else:
-		super._physics_process(delta)
+		velocity.y = 0.0
+
+	velocity.x = 0.0
+	move_and_slide()
 
 	# Тяжелая покачивающаяся походка / стойка противостояния
 	anim_phase += delta * (6.0 if is_engaged else 4.5)
@@ -63,12 +63,7 @@ func take_damage(amount: float, hit_pos: Vector2) -> void:
 	_spawn_damage_number(amount, hit_pos)
 	_play_hit_flash()
 
-	# При ударе босс вздрагивает на месте от сокрушительного напора колеса
-	velocity.x = 0.0
-	if visuals:
-		var recoil_tw = create_tween()
-		visuals.position.x = 6.0
-		recoil_tw.tween_property(visuals, "position:x", 0.0, 0.1)
+	velocity = Vector2.ZERO
 
 	_update_hp_display()
 	_apply_camera_shake(3.5)

@@ -31,6 +31,7 @@ var whip_target: Node = null
 var ram_anim_time: float = 0.0
 var original_visual_pos: Vector2 = Vector2.ZERO
 var current_boss_target: Node = null
+var is_fighting_boss: bool = false
 
 var jump_buffer_timer: float = 0.0
 var coyote_timer: float = 0.0
@@ -41,10 +42,30 @@ func _ready() -> void:
 	original_visual_pos = bike_visuals.position
 	EventBus.boost_activated.connect(_on_boost_started)
 	EventBus.boost_ended.connect(_on_boost_ended)
+	EventBus.dimension_changed.connect(_on_dimension_changed)
 	UpgradeManager.upgrades_updated.connect(_update_stats_from_upgrades)
 	if coin_collector:
 		coin_collector.area_entered.connect(_on_coin_collector_area_entered)
 	_update_stats_from_upgrades()
+
+func _on_dimension_changed(_dim_id: String) -> void:
+	# Сброс дуэлей с боссом при переходе в новую локацию
+	current_boss_target = null
+	whip_target = null
+	is_fighting_boss = false
+	is_tailwhip_attack = false
+	is_ramming = false
+	bike_visuals.position = original_visual_pos
+	bike_visuals.rotation = 0.0
+	if frame:
+		frame.is_tailwhip = false
+		frame.queue_redraw()
+	if back_wheel:
+		back_wheel.position = Vector2(-28, 0)
+		back_wheel.scale = Vector2(1, 1)
+		back_wheel.z_index = 0
+		back_wheel.is_spinning_attack = false
+		back_wheel.queue_redraw()
 
 func _update_stats_from_upgrades() -> void:
 	current_speed = UpgradeManager.get_value("bike_speed", 300.0)
@@ -101,7 +122,7 @@ func _physics_process(delta: float) -> void:
 		_check_jump()
 	
 	# Проверка статуса противостояния с боссом
-	var is_fighting_boss: bool = false
+	is_fighting_boss = false
 	if is_instance_valid(current_boss_target):
 		if current_boss_target.is_dead:
 			current_boss_target = null

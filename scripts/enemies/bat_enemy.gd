@@ -9,7 +9,7 @@ func _init() -> void:
 	coins_reward = 5
 	souls_reward = 2
 	enemy_name = "Bat"
-	base_speed = 70.0
+	base_speed = 0.0
 	flying = true
 
 func _ready() -> void:
@@ -23,9 +23,14 @@ func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
 	
-	wing_anim_phase += delta * 14.0
-	# Парение вверх-вниз
-	position.y = base_y + sin(wing_anim_phase * 0.4) * 15.0
+	var player = get_tree().get_first_node_in_group("player")
+	var is_world_stopped = player and "velocity" in player and abs(player.velocity.x) < 1.0
+	var flap_mult = 0.4 if is_world_stopped else 1.0
+	
+	wing_anim_phase += delta * 14.0 * flap_mult
+	# Парение вверх-вниз (затухает до легкого зависания при остановке мира)
+	var amp = 4.0 if is_world_stopped else 15.0
+	position.y = base_y + sin(wing_anim_phase * 0.4) * amp
 	if visuals:
 		visuals.queue_redraw()
 

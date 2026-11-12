@@ -7,7 +7,7 @@ class_name BaseEnemy
 @export var coins_reward: int = 3
 @export var souls_reward: int = 1
 @export var enemy_name: String = "BaseEnemy"
-@export var base_speed: float = 60.0
+@export var base_speed: float = 0.0
 @export var gravity: float = 980.0
 @export var flying: bool = false
 
@@ -19,6 +19,7 @@ var damage_num_scene = preload("res://scenes/ui/damage_number.tscn")
 @onready var hurtbox: Area2D = $Hurtbox
 
 func _ready() -> void:
+	add_to_group("enemy")
 	current_health = max_health
 
 func _physics_process(delta: float) -> void:
@@ -27,9 +28,11 @@ func _physics_process(delta: float) -> void:
 
 	if not flying and not is_on_floor():
 		velocity.y += gravity * delta
+	else:
+		velocity.y = 0.0
 
-	# Враги медленно двигаются навстречу байку
-	velocity.x = -base_speed
+	# Противники привязаны к земле и никогда не двигаются по горизонтали
+	velocity.x = 0.0
 	move_and_slide()
 
 	# Очистка, если игрок уехал далеко вперед
@@ -45,9 +48,8 @@ func take_damage(amount: float, hit_pos: Vector2) -> void:
 	_spawn_damage_number(amount, hit_pos)
 	_play_hit_flash()
 
-	# Импульс отскока при ударе велосипедом
-	velocity.x = 220.0
-	velocity.y = -140.0
+	# При столкновении и ударе противник остается неподвижным
+	velocity = Vector2.ZERO
 
 	if current_health <= 0.0:
 		die()
